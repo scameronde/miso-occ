@@ -1,0 +1,9 @@
+target
+result
+result-*
+.ghc.*
+dist
+dist-newstyle
+all.js
+.idea
+
