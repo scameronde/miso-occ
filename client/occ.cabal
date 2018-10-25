@@ -57,6 +57,7 @@ executable client
   else
     build-depends:  base
                   , occ
+                  , ghcjs-base
                   , aeson
                   , miso
                   , servant
