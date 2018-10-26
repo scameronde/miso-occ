@@ -30,6 +30,7 @@ foreign import javascript unsafe "$($1).zinoMenu()" makeMenu :: T.JSString -> IO
 foreign import javascript unsafe "$($1).zinoMenu('close', $($2))" closeMenu :: T.JSString -> T.JSString -> IO () 
 -- foreign import javascript unsafe "$($1).zinoOverlay({autoOpen: true, width: 300, height: 200, draggable: true, resizable: true, modal: false})" openWindow :: T.JSString -> IO ()
 foreign import javascript unsafe "$($1).zinoDraggable({handle: 'p'})" makeDraggable :: T.JSString -> IO ()
+foreign import javascript unsafe "$($1).zinoResizable()" makeResizable :: T.JSString -> IO ()
 
 -- MODELS
 
@@ -54,6 +55,7 @@ data Action
     | ZinoWindowOpened T.JSString
     | ClearText
     | FillText
+    | ChangeText T.JSString
     deriving (Show, Eq)
 
 data MenuItem
@@ -99,17 +101,20 @@ viewMenu =
 
 
 viewWindows :: Model -> View Action
-viewWindows (Model list t) = div_ [] (fmap (\(elementId, title) -> div_ [ id_ $ ms elementId
-                                                                        , title_ $ ms title
-                                                                        , onCreated (ZinoWindowOpened $ T.pack ("#" ++ elementId))
-                                                                        ] 
-                                                                        [ p_ [] [ text "Huhu" ]
-                                                                        , textarea_ [][ text $ ms t ]
-                                                                        , button_ [ onClick ClearText ][ text "clear" ]
-                                                                        , button_ [ onClick FillText ][ text "fill" ]
-                                                                        ] ) list)
+viewWindows (Model list t) = div_ [] (fmap (\(elementId, title) ->  viewWindow elementId title t) list)
 
-
+viewWindow :: String -> String -> String -> View Action
+viewWindow elementId title content =
+  div_  [ id_ $ ms elementId
+        , class_ "windowbackground"
+        , title_ $ ms title
+        , onCreated (ZinoWindowOpened $ T.pack ("#" ++ elementId))
+        ] 
+        [ p_ [] [ text "Huhu" ]
+        , textarea_ [ onChange ChangeText ] [ text $ ms content ]
+        , button_ [ onClick ClearText ][ text "clear" ]
+        , button_ [ onClick FillText ][ text "fill" ]
+        ]
 
 -- UPDATE
 
@@ -134,7 +139,6 @@ update action model = case action of
 
   ZinoWindowNew -> noEff ( Model ( list 
                                   ++ [("window_" ++ show num, "New Window " ++ show num)]
-                                  ++ [("window_" ++ show (num+1), "New Window " ++ show (num+1))]
                                  ) t
                          )
                    where list = getList model
@@ -144,11 +148,14 @@ update action model = case action of
   ZinoWindowOpened elementId -> model <# do
                                            putStrLn "Window opened"
                                            makeDraggable elementId
+                                           makeResizable elementId
                                            return NoOp
                                             
   ClearText -> noEff ( Model ( getList model ) "" )
 
   FillText -> noEff ( Model ( getList model ) "Hakuna Matata" )
+
+  ChangeText s -> noEff ( Model ( getList model) $ T.unpack s )
 
   _ -> noEff model
 
