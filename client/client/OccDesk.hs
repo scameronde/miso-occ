@@ -70,6 +70,7 @@ view m = div_
   []
   [ viewMenu
   , viewWindows m
+  , viewList 50
   ]
 
 
@@ -111,10 +112,18 @@ viewWindow elementId title content =
         , onCreated (ZinoWindowOpened $ T.pack ("#" ++ elementId))
         ] 
         [ p_ [] [ text "Huhu" ]
-        , textarea_ [ onChange ChangeText ] [ text $ ms content ]
+        , textarea_ [ onChange ChangeText, value_ $ ms content ] [ ]
         , button_ [ onClick ClearText ][ text "clear" ]
         , button_ [ onClick FillText ][ text "fill" ]
         ]
+
+viewList :: Integer -> View Action
+viewList numRows =
+  div_ [ class_ "scrolltable"]
+       [ ul_ []
+             (fmap (\num -> li_ [] [text $ T.pack $ show num]) [1..numRows])
+       ]
+
 
 -- UPDATE
 
