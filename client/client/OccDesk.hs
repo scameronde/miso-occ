@@ -18,19 +18,19 @@ module OccDesk
   )
 where
 
--- import qualified GHCJS.Types    as T
 import qualified Data.JSString as T
 import           Miso                    hiding ( action_
                                                 , model
                                                 )
 import Miso.String (ms)
+--import Miso.FFI
 
 
 foreign import javascript unsafe "$($1).zinoMenu()" makeMenu :: T.JSString -> IO () 
 foreign import javascript unsafe "$($1).zinoMenu('close', $($2))" closeMenu :: T.JSString -> T.JSString -> IO () 
--- foreign import javascript unsafe "$($1).zinoOverlay({autoOpen: true, width: 300, height: 200, draggable: true, resizable: true, modal: false})" openWindow :: T.JSString -> IO ()
 foreign import javascript unsafe "$($1).zinoDraggable({handle: 'p'})" makeDraggable :: T.JSString -> IO ()
 foreign import javascript unsafe "$($1).zinoResizable()" makeResizable :: T.JSString -> IO ()
+
 
 -- MODELS
 
@@ -158,6 +158,7 @@ update action model = case action of
                                            putStrLn "Window opened"
                                            makeDraggable elementId
                                            makeResizable elementId
+                                          -- addEventListener elementId "click" (\_ -> return NoOp)
                                            return NoOp
                                             
   ClearText -> noEff ( Model ( getList model ) "" )
