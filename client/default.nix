@@ -4,6 +4,12 @@
 , cabalHashesSha256 ? "0sas2wm59c017hbqdin12xc9dyx56wbd3qj55a8a0x7fvq2wdjbd"
 , hienixRev ? "e3113da93b479bec3046e67c0123860732335dd9"
 , hienixSha256 ? "05rkzjvzywsg66iafm84xgjlkf27yfbagrdcb8sc9fd59hrzyiqk"
+, cabalPlanRev ? "67d6b9b3f15fde3f3fc38d4bccc589d2e1a5420c"
+, cabalPlanSha256 ? "1rl4xaln0akcx8n7vai6ajyp16v5bg7x23f1g0ly7cvi5mvi945w"
+, servantClientGhcjsRev ? "544bb8184e1adbcc2359767c172b4922f8b2d650"
+, servantClientGhcjsSha256 ? "0hkyim72sk0c1p7rwv0dggk3j8zlxpgkjl14skqkrm9yas88r5yn"
+, misoRev ? "c0a3ec5f6309cdff2b732507f6ce9db992da3cd3"
+, misoSha256 ? "15n813j9h8lszg8b0491s2nhpn3k37910h0hggc576rmdk74db5c"
 }:
 let
   # do not load the version of nixpkgs that the users account points to
@@ -57,8 +63,8 @@ let
         super.callCabal2nix "cabal-plan" (pkgs.fetchFromGitHub {
           owner = "hvr";
           repo = "cabal-plan";
-          rev = "67d6b9b3f15fde3f3fc38d4bccc589d2e1a5420c";
-          sha256 = "1rl4xaln0akcx8n7vai6ajyp16v5bg7x23f1g0ly7cvi5mvi945w";
+          rev = cabalPlanRev;
+          sha256 =cabalPlanSha256;
           }) {})
         { editedCabalFile = null; };
     };
@@ -84,8 +90,8 @@ let
       servant-client-ghcjs = pkgs.haskell.lib.doJailbreak (super.callCabal2nix "servant-client-ghcjs" ((pkgs.fetchFromGitHub {
         owner = "haskell-servant";
         repo = "servant";
-        rev = "544bb8184e1adbcc2359767c172b4922f8b2d650";
-        sha256 = "0hkyim72sk0c1p7rwv0dggk3j8zlxpgkjl14skqkrm9yas88r5yn";
+        rev = servantClientGhcjsRev;
+        sha256 = servantClientGhcjsSha256;
         }) + /servant-client-ghcjs) {});
       servant-client-core = super.callHackage "servant-client-core" "0.12" {};
 
@@ -93,8 +99,8 @@ let
       miso = super.callCabal2nix "miso" (pkgs.fetchFromGitHub {
         owner = "dmjio";
         repo = "miso";
-        rev = "c0a3ec5f6309cdff2b732507f6ce9db992da3cd3";
-        sha256 = "15n813j9h8lszg8b0491s2nhpn3k37910h0hggc576rmdk74db5c";
+        rev = misoRev;
+        sha256 = misoSha256;
         }) {};
     };
   });
