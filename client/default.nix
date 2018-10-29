@@ -7,12 +7,12 @@
 # So for getting the right Sha256 you have to call
 # `nix-prefetch-url <URL>` for packed resources
 # `nix-prefetch-url --unpack <URL>` for unpacked resources
-{ nixpkgsRev ? "8126ce7e4503d8035aee54d27fdbb983432b6655"
-, nixpkgsSha256 ? "1nr8caq0cgna0v9sg01nirdbk6a1np6is57vpi8pv1ccwafd90ml"
+{ nixpkgsRev ? "8e2c3b93bae2d0bcc020f93ed0dcdb7a206eaf52"
+, nixpkgsSha256 ? "1an7zr829vgmvknfiy9alv4m4w07q4l1a6w8qafhj79qx8ca4la0"
 , cabalHashesRev ? "c7a535a9098ac8093a6d6263e2da567a3fab35ad"
 , cabalHashesSha256 ? "1xwgb615jjs6gqnfrglpsm0y4mmwprz84midp1hplng0rnv5p9kp"
-, servantClientGhcjsRev ? "654b09282b0c2211e78c7215af1463e809a7a7d0"
-, servantClientGhcjsSha256 ? "1kcnhra9d9l8342rxx6ri9xx82ikqb1a67q1q9ikp0vhx11hifa3"
+, servantClientGhcjsRev ? "544bb8184e1adbcc2359767c172b4922f8b2d650"
+, servantClientGhcjsSha256 ? "0hkyim72sk0c1p7rwv0dggk3j8zlxpgkjl14skqkrm9yas88r5yn"
 , misoRev ? "a9c4f0a3a6e7d87f9432dc6cf4b1d0c052bf7ef1"
 , misoSha256 ? "1yq5y4vffslm6abnfnggp5m3k6vla6mzcwmhmm23l8yizsvdkwv2"
 , hienixRev ? "e3113da93b479bec3046e67c0123860732335dd9"
@@ -117,10 +117,10 @@ let
       occ = super.callCabal2nix "occ" occ-src {};
 
       # use the versions and the versioning scheme from hackage 
-      http-types = super.callHackage "http-types" "0.12.2" {};
-      servant = super.callHackage "servant" "0.14.1" {};
+      http-types = super.callHackage "http-types" "0.11" {};
+      servant = super.callHackage "servant" "0.12.1" {};
       servant-client-ghcjs = pkgs.haskell.lib.doJailbreak (super.callCabal2nix "servant-client-ghcjs" (servant-pkgs + /servant-client-ghcjs) {});
-      servant-client-core = super.callHackage "servant-client-core" "0.14.1" {};
+      servant-client-core = super.callHackage "servant-client-core" "0.12" {};
 
       # use source from github and convert the cabal file to build and get the version
       miso = super.callCabal2nix "miso" miso-pkgs {};
@@ -137,16 +137,15 @@ in rec
   # sever shell for working with GHC
   server-shell = ghcPackages.shellFor {
     packages = p: [p.occ];
-#    buildInputs = [pkgs.cabal-install ghcPackages.cabal-plan ghcPackages.brittany];
     buildInputs = [pkgs.cabal-install ghcOddTools.cabal-plan ghcPackages.brittany];
   };
 
   # client build
-  #client = ghcjsPackages.occ;
+  client = ghcjsPackages.occ;
 
   # client shell for working with GHCJS
-  #client-shell = ghcjsPackages.shellFor {
-  #  packages = p: [p.occ];
-  #  buildInputs = [pkgs.cabal-install ghcPackages.cabal-plan ghcPackages.brittany hienix.hie80];
-  #};
+  client-shell = ghcjsPackages.shellFor {
+    packages = p: [p.occ];
+    buildInputs = [pkgs.cabal-install ghcOddTools.cabal-plan ghcPackages.brittany hienix.hie80];
+  };
 }
