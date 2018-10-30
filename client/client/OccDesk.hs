@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE RecordWildCards     #-}
 
 module OccDesk
   ( Model
@@ -18,24 +19,32 @@ module OccDesk
   )
 where
 
-import qualified Data.JSString as T
 import           Miso                    hiding ( action_
                                                 , model
                                                 )
-import Miso.String (ms, MisoString)
---import Miso.FFI
+import Miso.String (ms, unpack, MisoString)
+import qualified Data.Map as Map
+import Data.List (find)
+import Data.Maybe (maybeToList)
+import Data.Aeson.Types
 
 
-foreign import javascript unsafe "$($1).zinoMenu()" makeMenu :: T.JSString -> IO () 
-foreign import javascript unsafe "$($1).zinoMenu('close', $($2))" closeMenu :: T.JSString -> T.JSString -> IO () 
-foreign import javascript unsafe "$($1).zinoDraggable({handle: 'p'})" makeDraggable :: T.JSString -> IO ()
-foreign import javascript unsafe "$($1).zinoResizable()" makeResizable :: T.JSString -> IO ()
-foreign import javascript unsafe "bubble($1)" bubble :: MisoString -> IO ()
+foreign import javascript unsafe "$($1).zinoMenu()" makeMenu :: MisoString -> IO () 
+foreign import javascript unsafe "$($1).zinoMenu('close', $($2))" closeMenu :: MisoString -> MisoString -> IO () 
+
 
 -- MODELS
 
+data Window = Window { xPos :: Integer
+                     , yPos :: Integer
+                     , windowId :: MisoString
+                     , active :: Bool
+                     , title :: MisoString
+                     }
+              deriving (Show, Eq)
+
 data Model
-    = Model { getList :: [(String, String)]
+    = Model { getList :: [Window]
             , getText :: String }
     deriving (Show, Eq)
 
@@ -46,22 +55,22 @@ initialModel = Model [] "Lorem Ipsum"
 
 -- ACTIONS
 
+data MenuItem
+  = MenuPIN
+  deriving (Show, Eq)
+
 data Action
     = NoOp
-    | ZinoMenuCreated T.JSString
-    | ZinoMenuClose T.JSString T.JSString
-    | MenuClicked MenuItem
-    | ZinoWindowNew
-    | ZinoWindowOpened T.JSString
-    | WindowTitleClicked String
-    | WindowDragStarted String
+    | ZinoMenuCreated MisoString
+    | ZinoMenuClose MisoString MisoString
+    | ZinoMenuClicked MenuItem
+    | WindowNew
+    | WindowTitleClicked MisoString
+    | WindowDragStarted MisoString
+    | WindowDragged MisoString Pos
     | ClearText
     | FillText
-    | ChangeText T.JSString
-    deriving (Show, Eq)
-
-data MenuItem
-    = MenuPIN
+    | ChangeText MisoString
     deriving (Show, Eq)
 
 -- VIEWS
@@ -72,7 +81,6 @@ view m = div_
   []
   [ viewMenu
   , viewWindows m
-  , viewList 50
   ]
 
 
@@ -85,7 +93,7 @@ viewMenu =
   , li_ [] [ a_ [ href_ "#" ] [ text "???" ] ]
   , li_ [ id_ "terminalsMenu" ] [ a_ [ href_ "#" ] [ text "Terminals" ]
            , ul_ [] 
-                 [ li_ [ onClick (MenuClicked MenuPIN)] [ a_ [ href_ "#" ] [ text "PIN Eingabe" ] ]
+                 [ li_ [ onClick (ZinoMenuClicked MenuPIN)] [ a_ [ href_ "#" ] [ text "PIN Eingabe" ] ]
                  , li_ [] [ a_ [href_ "#"] [ text "Eingangshalle" ] ]
                  , li_ [] [ a_ [href_ "#"] [ text "Anrufhistorie" ] ]
                  , li_ [] [ a_ [href_ "#"] [ text "Wartefeld" ] ]
@@ -104,28 +112,31 @@ viewMenu =
 
 
 viewWindows :: Model -> View Action
-viewWindows (Model list t) = div_ [] (fmap (\(elementId, title) ->  viewWindow elementId title t) list)
+viewWindows (Model list t) = div_ [] (fmap (\window ->  viewWindow window t) list)
 
-viewWindow :: String -> String -> String -> View Action
-viewWindow elementId title content =
-  div_  [ id_ $ ms elementId
+viewWindow :: Window -> String -> View Action
+viewWindow Window{..} content =
+  div_  [ id_ windowId
         , class_ "windowbackground"
-        , title_ $ ms title
-        , onCreated (ZinoWindowOpened $ T.pack ("#" ++ elementId))
+        , title_ $ title
+        , style_ $ Map.fromList [ ("position", "absolute")
+                                , ("left", ms $ (show xPos) ++ "px")
+                                , ("top", ms $ (show yPos) ++ "px")
+                                , ("z-index", ms $ show (zOrder active))
+                                ]
         ] 
-        [ p_ [ onClick (WindowTitleClicked elementId), onDragStart (WindowDragStarted elementId) ] [ text "Huhu" ]
+        [ p_ [ onClick (WindowTitleClicked windowId)
+             , onDragStart (WindowDragStarted windowId)
+             , onDragWithPos $ WindowDragged windowId
+             ] 
+             [ text (ms ( "Huhu " ++ (show xPos))) ]
         , textarea_ [ onChange ChangeText, value_ $ ms content ] [ ]
         , button_ [ onClick ClearText ][ text "clear" ]
         , button_ [ onClick FillText ][ text "fill" ]
         ]
 
-viewList :: Integer -> View Action
-viewList numRows =
-  div_ [ class_ "scrolltable"]
-       [ ul_ []
-             (fmap (\num -> li_ [] [text $ T.pack $ show num]) [1..numRows])
-       ]
-
+zOrder :: Bool -> Integer
+zOrder b = if b then 1 else 0
 
 -- UPDATE
 
@@ -139,45 +150,45 @@ update action model = case action of
                                                          closeMenu parentElement closeElement
                                                          return NoOp
   
-  MenuClicked MenuPIN -> batchEff model [ do
-                                            putStrLn "Clicked: PIN"
-                                            return (ZinoMenuClose "#mainMenu" "#terminalsMenu")
-                                        ,
-                                          do
-                                            putStrLn "Opening Window"
-                                            return ZinoWindowNew
-                                        ]
+  ZinoMenuClicked MenuPIN -> batchEff model [ do
+                                                putStrLn "Clicked: PIN"
+                                                return (ZinoMenuClose "#mainMenu" "#terminalsMenu")
+                                            ,
+                                              do
+                                                putStrLn "Opening Window"
+                                                return WindowNew
+                                            ]
 
-  ZinoWindowNew -> noEff ( Model ( list 
-                                  ++ [("window_" ++ show num, "New Window " ++ show num)]
-                                 ) t
-                         )
-                   where list = getList model
-                         t = getText model
-                         num = length list
-
-  ZinoWindowOpened elementId -> model <# do
-                                           putStrLn "Window opened"
-                                           makeDraggable elementId
-                                           makeResizable elementId
-                                          -- addEventListener elementId "click" (\_ -> return NoOp)
-                                           return NoOp
+  WindowNew -> noEff ( Model (windowList ++ [newWindow]) (getText model) )
+               where
+                 windowList = getList model
+                 numWindows = length windowList
+                 newWindowId = ms $ "window_" ++ (show numWindows)
+                 newWindowTitle = ms $ "Window " ++ (show numWindows)
+                 newWindow = Window 0 0 newWindowId True newWindowTitle
                                             
-  WindowTitleClicked elementId -> model <# do
-                                    putStrLn ( "Window Title Clicked: " ++ elementId )
-                                    bubble $ ms elementId
-                                    return NoOp
+  WindowTitleClicked _ -> noEff model
 
-  WindowDragStarted elementId -> model <# do
-    putStrLn ( "Window Drag Started: " ++ elementId )
-    bubble $ ms elementId
-    return NoOp
-    
+  WindowDragStarted _ -> noEff model
+
+  WindowDragged wId Pos{..} -> Model newWindowList t <# do
+                  putStrLn ("Drag Event: " ++ (show clientX) ++ ", " ++ (show clientY))
+                  putStrLn ("  new Coordinates of window: " ++ (show newWindowList))
+                  return NoOp
+                where
+                  windowList = getList model
+                  t = getText model
+                  otherWindows = fmap (\w -> w { active = False }) $ filter (\Window{..} -> windowId /= wId) windowList
+                  windowToChange = find (\Window{..} -> windowId == wId) windowList
+                  newWindow = fmap (\w -> w { active = True, xPos = sane (xPos w) clientX, yPos = sane (yPos w) clientY }) windowToChange
+                  newWindowList = otherWindows ++ (maybeToList newWindow)
+                  sane x y = if (y <= 0) then x else y
+
   ClearText -> noEff ( Model ( getList model ) "" )
 
   FillText -> noEff ( Model ( getList model ) "Hakuna Matata" )
 
-  ChangeText s -> noEff ( Model ( getList model) $ T.unpack s )
+  ChangeText s -> noEff ( Model ( getList model) $ unpack s )
 
   _ -> noEff model
 
@@ -187,3 +198,19 @@ update action model = case action of
 subscriptions :: [Sub Action]
 subscriptions = []
 
+
+
+-- | Retrieves either "keyCode", "which" or "charCode" field in `Decoder`
+data Pos = Pos { clientX :: Integer
+               , clientY :: Integer
+               }
+            deriving (Show, Eq)
+               
+onDragWithPos :: (Pos -> action) -> Attribute action
+onDragWithPos = on "drag" posDecoder 
+
+posDecoder :: Decoder Pos
+posDecoder = Decoder decoder decodeAt
+  where
+    decodeAt = DecodeTarget mempty
+    decoder = withObject "event" $ \o -> Pos <$> o .: "clientX" <*> o .: "clientY"
