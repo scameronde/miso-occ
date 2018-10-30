@@ -40,6 +40,9 @@ data Window = Window { xPos :: Integer
                      , windowId :: MisoString
                      , active :: Bool
                      , title :: MisoString
+                     , dragging :: Bool
+                     , xDragDiff :: Integer
+                     , yDragDiff :: Integer
                      }
               deriving (Show, Eq)
 
@@ -116,20 +119,20 @@ viewWindows (Model list t) = div_ [] (fmap (\window ->  viewWindow window t) lis
 
 viewWindow :: Window -> String -> View Action
 viewWindow Window{..} content =
-  div_  [ id_ windowId
+  (nodeHtmlKeyed "div" (Key windowId))  
+        [ id_ windowId
         , class_ "windowbackground"
         , title_ $ title
         , style_ $ Map.fromList [ ("position", "absolute")
                                 , ("left", ms $ (show xPos) ++ "px")
                                 , ("top", ms $ (show yPos) ++ "px")
                                 , ("z-index", ms $ show (zOrder active))
+                                , ("user-select", "none")
                                 ]
+        , onDragStart (WindowDragStarted windowId)
+        , onDragWithPos $ WindowDragged windowId
         ] 
-        [ p_ [ onClick (WindowTitleClicked windowId)
-             , onDragStart (WindowDragStarted windowId)
-             , onDragWithPos $ WindowDragged windowId
-             ] 
-             [ text (ms ( "Huhu " ++ (show xPos))) ]
+        [ p_ [] [ text (ms ( "Huhu " ++ (show xPos))) ]
         , textarea_ [ onChange ChangeText, value_ $ ms content ] [ ]
         , button_ [ onClick ClearText ][ text "clear" ]
         , button_ [ onClick FillText ][ text "fill" ]
@@ -137,6 +140,9 @@ viewWindow Window{..} content =
 
 zOrder :: Bool -> Integer
 zOrder b = if b then 1 else 0
+
+-- draggable_::  Bool -> Attribute action
+-- draggable_ = boolProp "draggable"
 
 -- UPDATE
 
@@ -167,12 +173,16 @@ update action model = case action of
                  newWindowTitle = ms $ "Window " ++ (show numWindows)
                  newWindow = Window 0 0 newWindowId True newWindowTitle
                                             
-  WindowTitleClicked _ -> noEff model
+  WindowTitleClicked _ -> model <# do
+                  putStrLn ("Window Title clicked")
+                  return NoOp
 
-  WindowDragStarted _ -> noEff model
+  WindowDragStarted _ -> model <# do
+                  putStrLn ("Drag started")
+                  return NoOp
 
   WindowDragged wId Pos{..} -> Model newWindowList t <# do
-                  putStrLn ("Drag Event: " ++ (show clientX) ++ ", " ++ (show clientY))
+                  putStrLn ("Drag Event: " ++ (show clientX) ++ ", " ++ (show offsetX) ++ ", " ++ (show clientY) ++ ", " ++ (show offsetY))
                   putStrLn ("  new Coordinates of window: " ++ (show newWindowList))
                   return NoOp
                 where
@@ -180,7 +190,9 @@ update action model = case action of
                   t = getText model
                   otherWindows = fmap (\w -> w { active = False }) $ filter (\Window{..} -> windowId /= wId) windowList
                   windowToChange = find (\Window{..} -> windowId == wId) windowList
-                  newWindow = fmap (\w -> w { active = True, xPos = sane (xPos w) clientX, yPos = sane (yPos w) clientY }) windowToChange
+                  --newPosX = clientX - offsetX
+                  --newPosY = clientY - offsetY
+                  newWindow = fmap (\w -> w { active = True, xPos = sane (xPos w) ((xPos w) + offsetX), yPos = sane (yPos w) ((yPos w) + offsetY) }) windowToChange
                   newWindowList = otherWindows ++ (maybeToList newWindow)
                   sane x y = if (y <= 0) then x else y
 
@@ -203,14 +215,16 @@ subscriptions = []
 -- | Retrieves either "keyCode", "which" or "charCode" field in `Decoder`
 data Pos = Pos { clientX :: Integer
                , clientY :: Integer
+               , offsetX :: Integer
+               , offsetY :: Integer
                }
             deriving (Show, Eq)
-               
+                           
 onDragWithPos :: (Pos -> action) -> Attribute action
-onDragWithPos = on "drag" posDecoder 
+onDragWithPos = onWithOptions Miso.defaultOptions { preventDefault = True } "drag" posDecoder 
 
 posDecoder :: Decoder Pos
 posDecoder = Decoder decoder decodeAt
   where
     decodeAt = DecodeTarget mempty
-    decoder = withObject "event" $ \o -> Pos <$> o .: "clientX" <*> o .: "clientY"
+    decoder = withObject "event" $ \o -> Pos <$> o .: "clientX" <*> o .: "clientY" <*> o .: "offsetX" <*> o .: "offsetY"
