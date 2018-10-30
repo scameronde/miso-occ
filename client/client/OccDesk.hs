@@ -22,7 +22,7 @@ import qualified Data.JSString as T
 import           Miso                    hiding ( action_
                                                 , model
                                                 )
-import Miso.String (ms)
+import Miso.String (ms, MisoString)
 --import Miso.FFI
 
 
@@ -30,7 +30,7 @@ foreign import javascript unsafe "$($1).zinoMenu()" makeMenu :: T.JSString -> IO
 foreign import javascript unsafe "$($1).zinoMenu('close', $($2))" closeMenu :: T.JSString -> T.JSString -> IO () 
 foreign import javascript unsafe "$($1).zinoDraggable({handle: 'p'})" makeDraggable :: T.JSString -> IO ()
 foreign import javascript unsafe "$($1).zinoResizable()" makeResizable :: T.JSString -> IO ()
-
+foreign import javascript unsafe "bubble($1)" bubble :: MisoString -> IO ()
 
 -- MODELS
 
@@ -53,6 +53,8 @@ data Action
     | MenuClicked MenuItem
     | ZinoWindowNew
     | ZinoWindowOpened T.JSString
+    | WindowTitleClicked String
+    | WindowDragStarted String
     | ClearText
     | FillText
     | ChangeText T.JSString
@@ -111,7 +113,7 @@ viewWindow elementId title content =
         , title_ $ ms title
         , onCreated (ZinoWindowOpened $ T.pack ("#" ++ elementId))
         ] 
-        [ p_ [] [ text "Huhu" ]
+        [ p_ [ onClick (WindowTitleClicked elementId), onDragStart (WindowDragStarted elementId) ] [ text "Huhu" ]
         , textarea_ [ onChange ChangeText, value_ $ ms content ] [ ]
         , button_ [ onClick ClearText ][ text "clear" ]
         , button_ [ onClick FillText ][ text "fill" ]
@@ -161,6 +163,16 @@ update action model = case action of
                                           -- addEventListener elementId "click" (\_ -> return NoOp)
                                            return NoOp
                                             
+  WindowTitleClicked elementId -> model <# do
+                                    putStrLn ( "Window Title Clicked: " ++ elementId )
+                                    bubble $ ms elementId
+                                    return NoOp
+
+  WindowDragStarted elementId -> model <# do
+    putStrLn ( "Window Drag Started: " ++ elementId )
+    bubble $ ms elementId
+    return NoOp
+    
   ClearText -> noEff ( Model ( getList model ) "" )
 
   FillText -> noEff ( Model ( getList model ) "Hakuna Matata" )
