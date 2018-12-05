@@ -27,16 +27,20 @@ import Miso.String (ms, MisoString)
 
 
 foreign import javascript unsafe "$($1).zinoMenu()" makeMenu :: T.JSString -> IO () 
-foreign import javascript unsafe "$($1).zinoMenu('close', $($2))" closeMenu :: T.JSString -> T.JSString -> IO () 
-foreign import javascript unsafe "$($1).draggable({handle: 'p'})" makeDraggable :: T.JSString -> IO ()
+foreign import javascript unsafe "$($1).zinoMenu('close', $($2))" closeMenu :: T.JSString -> T.JSString -> IO ()
+
+foreign import javascript unsafe "$($1).draggable({handle: '.titlebar'})" makeDraggable :: T.JSString -> IO ()
 foreign import javascript unsafe "$($1).resizable()" makeResizable :: T.JSString -> IO ()
 foreign import javascript unsafe "bubble($1)" bubble :: MisoString -> IO ()
+
+
 
 -- MODELS
 
 data Model
     = Model { getList :: [(String, String)]
-            , getText :: String }
+            , getText :: String 
+            }
     deriving (Show, Eq)
 
 
@@ -59,6 +63,7 @@ data Action
     | FillText
     | ChangeText T.JSString
     deriving (Show, Eq)
+
 
 data MenuItem
     = MenuPIN
@@ -112,10 +117,18 @@ viewWindow elementId title content =
         , title_ $ ms title
         , onCreated (ZinoWindowOpened $ T.pack ("#" ++ elementId))
         ] 
-        [ p_ [ onClick (WindowTitleClicked elementId), onDragStart (WindowDragStarted elementId) ] [ text "Huhu" ]
-        , textarea_ [ onChange ChangeText, value_ $ ms content ] [ ]
-        , button_ [ onClick ClearText ][ text "clear" ]
-        , button_ [ onClick FillText ][ text "fill" ]
+        [ p_  [ onClick (WindowTitleClicked elementId)
+              , onDragStart (WindowDragStarted elementId) 
+              , class_ "titlebar"
+              ] 
+              [ text "Huhu" 
+              ]
+        , p_  []
+              [
+                textarea_ [ onChange ChangeText, value_ $ ms content ] [ ]
+              , button_ [ onClick ClearText ][ text "clear" ]
+              , button_ [ onClick FillText ][ text "fill" ]
+              ]
         ]
 
 
@@ -153,9 +166,8 @@ update action model = case action of
                                            putStrLn "Window opened"
                                            makeDraggable elementId
                                            makeResizable elementId
-                                          -- addEventListener elementId "click" (\_ -> return NoOp)
                                            return NoOp
-                                            
+
   WindowTitleClicked elementId -> model <# do
                                     putStrLn ( "Window Title Clicked: " ++ elementId )
                                     bubble $ ms elementId
