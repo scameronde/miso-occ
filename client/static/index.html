@@ -25,12 +25,12 @@
     <script src="my.js"></script>
 
     <div id="frame1" style="width: 800px; height: 400px">
-      <p>Frame 1</p>
+      <p>Frame 1</p><span id="breakoutFrame1" class="glyphicon glyphicon-resize-full" aria-hidden="true"></span>
       <iframe src="app.html" style="width: 100%; height: 100%">
       </iframe>
     </div>
-    <div id="frame2" style="width: 800px; height: 400px">
-      <p>Frame 2</p>
+    <div id="frame2" style="width: 800px; height: 400px">    
+      <p>Frame 2</p><span id="breakoutFrame2" class="glyphicon glyphicon-resize-full" aria-hidden="true"></span>
       <iframe src="app.html" style="width: 100%; height: 100%">
       </iframe>          
     </div>
@@ -39,9 +39,17 @@
       $("#frame1").zinoDraggable({handle: 'p'});
       $("#frame1").zinoResizable();
       $("#frame1").click(() => bubble("frame1"));
+      $("#breakoutFrame1").click(() => {
+        var win = window.open("app.html", "_blank");
+        $("#frame1").hide();
+      });
       $("#frame2").zinoDraggable({handle: 'p'});
       $("#frame2").zinoResizable();
       $("#frame2").click(() => bubble("frame2"));
+      $("#breakoutFrame2").click(() => {
+        var win = window.open("app.html", "_blank");
+        $("#frame2").hide();
+      });
     </script>
   </body>
 </html>
