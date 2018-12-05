@@ -22,9 +22,42 @@ body {
     padding: 5px;
 }
 
-.windowbackground {
+.window {
     background-color: lightgreen;
+    position: absolute;
 }
+
+.frame {
+    background-color: lightgray;
+    position: absolute;
+    padding: 5px;
+    display: flex; 
+    flex-direction: column;;
+}
+
+.titlebar {
+    flex-grow: 0;
+}
+
+.title {
+}
+
+.decorator {
+}
+
+.windowcontent {
+    flex-grow: 1;
+    display: flex;
+}
+
+.innerframe {
+    flex-grow: 1;
+}
+
+body {
+    padding-top: 0px;
+}
+
 
 .scrolltable {
     overflow: scroll;

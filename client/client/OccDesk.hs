@@ -28,8 +28,8 @@ import Miso.String (ms, MisoString)
 
 foreign import javascript unsafe "$($1).zinoMenu()" makeMenu :: T.JSString -> IO () 
 foreign import javascript unsafe "$($1).zinoMenu('close', $($2))" closeMenu :: T.JSString -> T.JSString -> IO () 
-foreign import javascript unsafe "$($1).zinoDraggable({handle: 'p'})" makeDraggable :: T.JSString -> IO ()
-foreign import javascript unsafe "$($1).zinoResizable()" makeResizable :: T.JSString -> IO ()
+foreign import javascript unsafe "$($1).draggable({handle: 'p'})" makeDraggable :: T.JSString -> IO ()
+foreign import javascript unsafe "$($1).resizable()" makeResizable :: T.JSString -> IO ()
 foreign import javascript unsafe "bubble($1)" bubble :: MisoString -> IO ()
 
 -- MODELS
@@ -72,7 +72,6 @@ view m = div_
   []
   [ viewMenu
   , viewWindows m
-  , viewList 50
   ]
 
 
@@ -109,7 +108,7 @@ viewWindows (Model list t) = div_ [] (fmap (\(elementId, title) ->  viewWindow e
 viewWindow :: String -> String -> String -> View Action
 viewWindow elementId title content =
   div_  [ id_ $ ms elementId
-        , class_ "windowbackground"
+        , class_ "window"
         , title_ $ ms title
         , onCreated (ZinoWindowOpened $ T.pack ("#" ++ elementId))
         ] 
@@ -119,12 +118,6 @@ viewWindow elementId title content =
         , button_ [ onClick FillText ][ text "fill" ]
         ]
 
-viewList :: Integer -> View Action
-viewList numRows =
-  div_ [ class_ "scrolltable"]
-       [ ul_ []
-             (fmap (\num -> li_ [] [text $ T.pack $ show num]) [1..numRows])
-       ]
 
 
 -- UPDATE

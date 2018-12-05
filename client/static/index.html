@@ -1,55 +1,92 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
-    <link rel="stylesheet" href="chat.css">
-    <link rel="stylesheet" href="zino/themes/blue/zino.core.css">
-    <link rel="stylesheet" href="zino/themes/blue/zino.button.css">
-    <link rel="stylesheet" href="zino/themes/blue/zino.menu.css">
-    <link rel="stylesheet" href="zino/themes/blue/zino.overlay.css">
-    <link rel="stylesheet" href="zino/themes/blue/zino.draggable.css">
-    <link rel="stylesheet" href="zino/themes/blue/zino.resizable.css">
-  </head>
-  <body>
-    <script src="jquery/jquery.js"></script>
-    <script src="bootstrap/js/bootstrap.js"></script>
-    <script src="zino/zino.menu.min.js"></script>
-    <script src="zino/zino.draggable.min.js"></script>
-    <script src="zino/zino.resizable.min.js"></script>
-    <script src="zino/zino.position.min.js"></script>
-    <script src="zino/zino.overlay.min.js"></script>
-    <script src="zino/zino.button.min.js"></script>
-    <script src="my.js"></script>
 
-    <div id="frame1" style="width: 800px; height: 400px">
-      <p>Frame 1</p><span id="breakoutFrame1" class="glyphicon glyphicon-resize-full" aria-hidden="true"></span>
-      <iframe src="app.html" style="width: 100%; height: 100%">
-      </iframe>
-    </div>
-    <div id="frame2" style="width: 800px; height: 400px">    
-      <p>Frame 2</p><span id="breakoutFrame2" class="glyphicon glyphicon-resize-full" aria-hidden="true"></span>
-      <iframe src="app.html" style="width: 100%; height: 100%">
-      </iframe>          
-    </div>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+  <link rel="stylesheet" href="jqueryui/jquery-ui.min.css">
+  <link rel="stylesheet" href="chat.css">
+</head>
 
-    <script>
-      $("#frame1").zinoDraggable({handle: 'p'});
-      $("#frame1").zinoResizable();
-      $("#frame1").click(() => bubble("frame1"));
-      $("#breakoutFrame1").click(() => {
-        var win = window.open("app.html", "_blank");
-        $("#frame1").hide();
-      });
-      $("#frame2").zinoDraggable({handle: 'p'});
-      $("#frame2").zinoResizable();
-      $("#frame2").click(() => bubble("frame2"));
-      $("#breakoutFrame2").click(() => {
-        var win = window.open("app.html", "_blank");
-        $("#frame2").hide();
-      });
-    </script>
-  </body>
+<body>
+  <script src="jquery/jquery.js"></script>
+  <script src="jqueryui/jquery-ui.min.js"></script>
+  <script src="bootstrap/js/bootstrap.js"></script>
+  <script src="my.js"></script>
+
+  <div id="frame1" class="frame" style="width: 800px; height: 400px">
+    <div class="titlebar">
+      <span class="title">Frame 1</span><span> </span><span id="breakoutFrame1" class="decorator glyphicon glyphicon-resize-full"
+        aria-hidden="true"></span>
+    </div>
+    <div class="windowcontent">
+      <iframe src="app.html" class="innerframe"></iframe>
+    </div>
+  </div>
+
+  <div id="frame2" class="frame" style="width: 800px; height: 400px">
+    <div class="titlebar">
+      <span class="title">Frame 2</span><span> </span><span id="breakoutFrame2" class="decorator glyphicon glyphicon-resize-full"
+        aria-hidden="true"></span>
+    </div>
+    <div class="windowcontent">
+      <iframe src="app.html" class="innerframe"></iframe>
+    </div>
+  </div>
+
+  <div id="frame3" class="frame" style="width: 800px; height: 400px">
+    <div class="titlebar">
+      <span class="title">Frame 3</span><span> </span><span id="breakoutFrame3" class="decorator glyphicon glyphicon-resize-full"
+        aria-hidden="true"></span>
+    </div>
+    <div class="windowcontent">
+      <iframe src="app.html" class="innerframe"></iframe>
+    </div>
+  </div>
+
+
+  <div id="frame4" class="frame" style="width: 800px; height: 400px">
+    <div class="titlebar">
+      <span class="title">Frame 4</span><span> </span><span id="breakoutFrame4" class="decorator glyphicon glyphicon-resize-full"
+        aria-hidden="true"></span>
+    </div>
+    <div class="windowcontent">
+      <iframe src="app.html" class="innerframe"></iframe>
+    </div>
+  </div>
+
+
+  <script>
+    $("#frame1").draggable({ handle: '.titlebar', stack: ".frame", iframeFix: true, snap: true });
+    $("#frame1").resizable({ grid: [5, 5] });
+    $("#breakoutFrame1").click(() => {
+      var win = window.open("app.html", "_blank");
+      $("#frame1").hide();
+    });
+
+    $("#frame2").draggable({ handle: '.titlebar', stack: ".frame", iframeFix: true, snap: true });
+    $("#frame2").resizable({ grid: [5, 5] });
+    $("#breakoutFrame2").click(() => {
+      var win = window.open("app.html", "_blank");
+      $("#frame2").hide();
+    });
+
+    $("#frame3").draggable({ handle: '.titlebar', stack: ".frame", iframeFix: true, snap: true });
+    $("#frame3").resizable({ grid: [5, 5] });
+    $("#breakoutFrame3").click(() => {
+      var win = window.open("app.html", "_blank");
+      $("#frame3").hide();
+    });
+
+    $("#frame4").draggable({ handle: '.titlebar', stack: ".frame", iframeFix: true, snap: true });
+    $("#frame4").resizable({ grid: [5, 5] });
+    $("#breakoutFrame4").click(() => {
+      var win = window.open("app.html", "_blank");
+      $("#frame4").hide();
+    });
+  </script>
+</body>
+
 </html>
