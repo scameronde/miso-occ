@@ -169,14 +169,11 @@ update action model = case action of
                                             pure WindowNew
                                         ]
 
-  WindowNew -> noEff ( Model ln t c ic)
+  WindowNew -> noEff ( windowList .~ ln $ model)
                   where 
-                    lo = view windowList model
+                    lo = model ^. windowList
                     num = length lo
                     ln = lo ++ [("window_" ++ show num, "New Window " ++ show num)]
-                    t = view commonText model
-                    c = view counter model
-                    ic  = view counting model
 
   WindowOpened elementId -> model <# do
                                         putStrLn "Window opened"
@@ -184,62 +181,30 @@ update action model = case action of
                                         makeResizable elementId
                                         pure NoOp
 
-  ClearText -> noEff ( Model l t c ic )
-                where
-                  l  = view windowList model
-                  t  = ""
-                  c  = view counter model
-                  ic = view counting model
+  ClearText -> noEff ( commonText .~ "" $ model )
 
-  FillText -> noEff ( Model l t c ic )
-                where
-                  l  = view windowList model
-                  t  = "Hakuna Matata"
-                  c  = view counter model
-                  ic = view counting model
+  FillText -> noEff ( commonText .~ "Hakuna Matata" $ model)
 
-  ChangeText s -> noEff ( Model l t c ic )
-                    where
-                      l  = view windowList model
-                      t  = unpack s
-                      c  = view counter model
-                      ic = view counting model
+  ChangeText s -> noEff ( commonText .~ (unpack s) $ model )
 
-  StartCounter -> ( Model l t c ic ) <# do
+  StartCounter -> ( counting .~ True $ model ) <# do
                       pure CountUp
-                    where
-                      l  = view windowList model
-                      t  = view commonText model
-                      c  = view counter model
-                      ic = True
         
-  StopCounter -> ( Model l t c ic ) <# do
+  StopCounter -> ( counting .~ False $ model ) <# do
                       pure CountUp
-                  where
-                    l  = view windowList model
-                    t  = view commonText model
-                    c  = view counter model
-                    ic = False
           
-  CountUp -> ( Model l t cn ic ) <# do
+  CountUp -> ( (counter .~ cn) . (commonText .~ t) $ model ) <# do
                   threadDelay 1000000
                   r <- randomRIO (1, 100)
-                  if (ic) then pure (SetRandom r)
-                          else pure NoOp
+                  if (model ^. counting) then pure (SetRandom r)
+                                         else pure NoOp
               where
-                l  = view windowList model
-                co = view counter model
+                co = model ^. counter
                 cn = co + 1
                 t  = show $ co
-                ic = view counting model
 
-  SetRandom r -> ( Model l t r ic ) <# do
+  SetRandom r -> ( counter .~ r $ model ) <# do
                       pure CountUp
-                  where
-                    l  = view windowList model
-                    t  = view commonText model
-                    ic = view counting model
-
 
   _ -> noEff model
 
