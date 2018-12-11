@@ -14,7 +14,7 @@ main :: IO ()
 main = do
   startApp App
     { model         = OccDesk.initialModel
-    , view          = OccDesk.view
+    , view          = OccDesk.viewModel
     , update        = OccDesk.update
     , initialAction = OccDesk.NoOp
     , events        = defaultEvents

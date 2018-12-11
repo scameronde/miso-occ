@@ -4,6 +4,7 @@
 {-# LANGUAGE JavaScriptFFI       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
@@ -11,7 +12,7 @@
 module OccDesk
   ( Model
   , Action(NoOp)
-  , OccDesk.view
+  , OccDesk.viewModel
   , OccDesk.update
   , OccDesk.subscriptions
   , OccDesk.initialModel
@@ -20,10 +21,12 @@ where
 
 import           Miso                    hiding ( action_
                                                 , model
+                                                , view
                                                 )
 import Miso.String (ms, MisoString, unpack)
 import Control.Concurrent (threadDelay)
 import System.Random (randomRIO)
+import Control.Lens
 
 foreign import javascript unsafe "$($1).draggable({ handle: '.titlebar', stack: '.window', snap: true })" makeDraggable :: MisoString -> IO ()
 foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizable :: MisoString -> IO ()
@@ -33,13 +36,14 @@ foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizab
 -- MODELS
 
 data Model
-    = Model { getList :: [(String, String)]
-            , getText :: String
-            , getCounter :: Int
-            , getCounting :: Bool
+    = Model { _windowList :: [(String, String)]
+            , _commonText :: String
+            , _counter :: Int
+            , _counting :: Bool
             }
     deriving (Show, Eq)
 
+makeLenses ''Model
 
 initialModel :: Model
 initialModel = Model [] "Lorem Ipsum" 0 False
@@ -69,8 +73,8 @@ data MenuItem
 -- VIEWS
 
 
-view :: Model -> View Action
-view m = div_
+viewModel :: Model -> View Action
+viewModel m = div_
   []
   [ viewMenu
   , viewWindows m
@@ -167,12 +171,12 @@ update action model = case action of
 
   WindowNew -> noEff ( Model ln t c ic)
                   where 
-                    lo = getList model
+                    lo = view windowList model
                     num = length lo
                     ln = lo ++ [("window_" ++ show num, "New Window " ++ show num)]
-                    t = getText model
-                    c = getCounter model
-                    ic  = getCounting model
+                    t = view commonText model
+                    c = view counter model
+                    ic  = view counting model
 
   WindowOpened elementId -> model <# do
                                         putStrLn "Window opened"
@@ -182,58 +186,59 @@ update action model = case action of
 
   ClearText -> noEff ( Model l t c ic )
                 where
-                  l  = getList model
+                  l  = view windowList model
                   t  = ""
-                  c  = getCounter model
-                  ic = getCounting model
+                  c  = view counter model
+                  ic = view counting model
 
   FillText -> noEff ( Model l t c ic )
                 where
-                  l  = getList model
+                  l  = view windowList model
                   t  = "Hakuna Matata"
-                  c  = getCounter model
-                  ic = getCounting model
+                  c  = view counter model
+                  ic = view counting model
 
   ChangeText s -> noEff ( Model l t c ic )
                     where
-                      l  = getList model
+                      l  = view windowList model
                       t  = unpack s
-                      c  = getCounter model
-                      ic = getCounting model
+                      c  = view counter model
+                      ic = view counting model
 
   StartCounter -> ( Model l t c ic ) <# do
                       pure CountUp
                     where
-                      l  = getList model
-                      t  = getText model
-                      c  = getCounter model
+                      l  = view windowList model
+                      t  = view commonText model
+                      c  = view counter model
                       ic = True
         
   StopCounter -> ( Model l t c ic ) <# do
                       pure CountUp
                   where
-                    l  = getList model
-                    t  = getText model
-                    c  = getCounter model
+                    l  = view windowList model
+                    t  = view commonText model
+                    c  = view counter model
                     ic = False
           
-  CountUp -> ( Model l t c ic ) <# do
+  CountUp -> ( Model l t cn ic ) <# do
                   threadDelay 1000000
                   r <- randomRIO (1, 100)
                   if (ic) then pure (SetRandom r)
                           else pure NoOp
               where
-                l  = getList model
-                t  = show $ getCounter model
-                c  = (getCounter model) + 1
-                ic = getCounting model
+                l  = view windowList model
+                co = view counter model
+                cn = co + 1
+                t  = show $ co
+                ic = view counting model
 
   SetRandom r -> ( Model l t r ic ) <# do
                       pure CountUp
                   where
-                    l  = getList model
-                    t  = getText model
-                    ic = getCounting model
+                    l  = view windowList model
+                    t  = view commonText model
+                    ic = view counting model
 
 
   _ -> noEff model
