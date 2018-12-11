@@ -22,8 +22,7 @@ import           Miso                    hiding ( action_
                                                 , model
                                                 )
 import Miso.String (ms, MisoString, unpack)
---import Miso.String (ms, MisoString)
---import Miso.FFI
+import Control.Concurrent (threadDelay)
 
 
 foreign import javascript unsafe "$($1).draggable({ handle: '.titlebar', stack: '.window', snap: true })" makeDraggable :: MisoString -> IO ()
@@ -35,13 +34,14 @@ foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizab
 
 data Model
     = Model { getList :: [(String, String)]
-            , getText :: String 
+            , getText :: String
+            , getCounter :: Int
             }
     deriving (Show, Eq)
 
 
 initialModel :: Model
-initialModel = Model [] "Lorem Ipsum"
+initialModel = Model [] "Lorem Ipsum" 0
 
 
 -- ACTIONS
@@ -54,6 +54,8 @@ data Action
     | ClearText
     | FillText
     | ChangeText MisoString
+    | StartCounter
+    | CountUp
     deriving (Show, Eq)
 
 
@@ -123,7 +125,7 @@ viewMenu =
 
 
 viewWindows :: Model -> View Action
-viewWindows (Model list t) = div_ [] (fmap (\(elementId, title) ->  viewWindow elementId title t) list)
+viewWindows (Model list t _) = div_ [] (fmap (\(elementId, title) ->  viewWindow elementId title t) list)
 
 viewWindow :: String -> String -> String -> View Action
 viewWindow elementId title content =
@@ -141,6 +143,7 @@ viewWindow elementId title content =
                  textarea_ [ onChange ChangeText, value_ $ ms content ] [ ]
                , button_ [ onClick ClearText ][ text "clear" ]
                , button_ [ onClick FillText ][ text "fill" ]
+               , button_ [ onClick StartCounter ] [ text "start"]
                ]
         ]
 
@@ -158,9 +161,10 @@ update action model = case action of
                                             pure WindowNew
                                         ]
 
-  WindowNew -> noEff ( Model ( list ++ [("window_" ++ show num, "New Window " ++ show num)]) t )
+  WindowNew -> noEff ( Model ( list ++ [("window_" ++ show num, "New Window " ++ show num)]) t c )
                    where list = getList model
                          t = getText model
+                         c = getCounter model
                          num = length list
 
   WindowOpened elementId -> model <# do
@@ -169,11 +173,19 @@ update action model = case action of
                                         makeResizable elementId
                                         pure NoOp
 
-  ClearText -> noEff ( Model ( getList model ) "" )
+  ClearText -> noEff ( Model ( getList model ) "" (getCounter model) )
 
-  FillText -> noEff ( Model ( getList model ) "Hakuna Matata" )
+  FillText -> noEff ( Model ( getList model ) "Hakuna Matata" (getCounter model) )
 
-  ChangeText s -> noEff ( Model ( getList model) $ unpack s )
+  ChangeText s -> noEff ( Model ( getList model) (unpack s) (getCounter model) )
+
+  StartCounter -> model <# do
+                             pure CountUp
+
+  CountUp -> ( Model ( getList model) (show (getCounter model)) ((getCounter model) + 1) ) <# do
+                putStrLn "Count Up"
+                threadDelay 1000000
+                pure CountUp
 
   _ -> noEff model
 
