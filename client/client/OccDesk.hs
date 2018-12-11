@@ -36,12 +36,13 @@ data Model
     = Model { getList :: [(String, String)]
             , getText :: String
             , getCounter :: Int
+            , getCounting :: Bool
             }
     deriving (Show, Eq)
 
 
 initialModel :: Model
-initialModel = Model [] "Lorem Ipsum" 0
+initialModel = Model [] "Lorem Ipsum" 0 False
 
 
 -- ACTIONS
@@ -55,6 +56,7 @@ data Action
     | FillText
     | ChangeText MisoString
     | StartCounter
+    | StopCounter
     | CountUp
     deriving (Show, Eq)
 
@@ -125,10 +127,10 @@ viewMenu =
 
 
 viewWindows :: Model -> View Action
-viewWindows (Model list t _) = div_ [] (fmap (\(elementId, title) ->  viewWindow elementId title t) list)
+viewWindows (Model list t _ ic) = div_ [] (fmap (\(elementId, title) ->  viewWindow elementId title t ic) list)
 
-viewWindow :: String -> String -> String -> View Action
-viewWindow elementId title content =
+viewWindow :: String -> String -> String -> Bool -> View Action
+viewWindow elementId title textContent isCounting =
   div_  [ id_ $ ms elementId
         , class_ "window"
         , title_ $ ms title
@@ -140,10 +142,11 @@ viewWindow elementId title content =
                ]
         , div_ [ class_ "windowcontent" ]
                [
-                 textarea_ [ onChange ChangeText, value_ $ ms content ] [ ]
+                 textarea_ [ onChange ChangeText, value_ $ ms textContent ] [ ]
                , button_ [ onClick ClearText ][ text "clear" ]
                , button_ [ onClick FillText ][ text "fill" ]
-               , button_ [ onClick StartCounter ] [ text "start"]
+               , if isCounting then (button_ [ onClick StopCounter ] [ text "stop"]) 
+                               else (button_ [ onClick StartCounter ] [ text "start"])
                ]
         ]
 
@@ -161,11 +164,14 @@ update action model = case action of
                                             pure WindowNew
                                         ]
 
-  WindowNew -> noEff ( Model ( list ++ [("window_" ++ show num, "New Window " ++ show num)]) t c )
-                   where list = getList model
-                         t = getText model
-                         c = getCounter model
-                         num = length list
+  WindowNew -> noEff ( Model ln t c ic)
+                  where 
+                    lo = getList model
+                    num = length lo
+                    ln = lo ++ [("window_" ++ show num, "New Window " ++ show num)]
+                    t = getText model
+                    c = getCounter model
+                    ic  = getCounting model
 
   WindowOpened elementId -> model <# do
                                         putStrLn "Window opened"
@@ -173,19 +179,53 @@ update action model = case action of
                                         makeResizable elementId
                                         pure NoOp
 
-  ClearText -> noEff ( Model ( getList model ) "" (getCounter model) )
+  ClearText -> noEff ( Model l t c ic )
+                where
+                  l  = getList model
+                  t  = ""
+                  c  = getCounter model
+                  ic = getCounting model
 
-  FillText -> noEff ( Model ( getList model ) "Hakuna Matata" (getCounter model) )
+  FillText -> noEff ( Model l t c ic )
+                where
+                  l  = getList model
+                  t  = "Hakuna Matata"
+                  c  = getCounter model
+                  ic = getCounting model
 
-  ChangeText s -> noEff ( Model ( getList model) (unpack s) (getCounter model) )
+  ChangeText s -> noEff ( Model l t c ic )
+                    where
+                      l  = getList model
+                      t  = unpack s
+                      c  = getCounter model
+                      ic = getCounting model
 
-  StartCounter -> model <# do
-                             pure CountUp
-
-  CountUp -> ( Model ( getList model) (show (getCounter model)) ((getCounter model) + 1) ) <# do
-                putStrLn "Count Up"
-                threadDelay 1000000
-                pure CountUp
+  StartCounter -> ( Model l t c ic ) <# do
+                      pure CountUp
+                    where
+                      l  = getList model
+                      t  = getText model
+                      c  = getCounter model
+                      ic = True
+        
+  StopCounter -> ( Model l t c ic ) <# do
+                      pure CountUp
+                  where
+                    l  = getList model
+                    t  = getText model
+                    c  = getCounter model
+                    ic = False
+          
+  CountUp -> ( Model l t c ic ) <# do
+                  putStrLn "Count Up"
+                  threadDelay 1000000
+                  if (ic) then pure CountUp
+                          else pure NoOp
+              where
+                l  = getList model
+                t  = show $ getCounter model
+                c  = (getCounter model) + 1
+                ic = getCounting model
 
   _ -> noEff model
 
