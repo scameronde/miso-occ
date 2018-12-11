@@ -68,13 +68,13 @@ initialDataTable :: DataTable
 initialDataTable = unfoldr giveRow maxY
                     where giveRow count = if (count ==0) then Nothing else Just (initialDataRow, count-1)
 
-randomDataRow :: [IO Int]
-randomDataRow = unfoldr giveOne maxX
-                  where giveOne count = if (count == 0) then Nothing else Just (randomRIO (1::Int, 100::Int), count-1)
+randomDataRow :: Int -> DataRow
+randomDataRow v = unfoldr giveOne maxX
+                    where giveOne count = if (count == 0) then Nothing else Just (v, count-1)
 
-randomDataTable :: [[IO Int]]
-randomDataTable = unfoldr giveRow maxY
-                    where giveRow count = if (count ==0) then Nothing else Just (randomDataRow, count-1)
+randomDataTable :: Int -> DataTable
+randomDataTable v = unfoldr giveRow maxY
+                      where giveRow count = if (count ==0) then Nothing else Just (randomDataRow v, count-1)
                     
 -- ACTIONS
 
@@ -195,7 +195,7 @@ viewTableRow :: DataRow -> View Action
 viewTableRow row = tr_ [] ( fmap viewTableCell row )
 
 viewTable :: DataTable -> View Action
-viewTable table = table_ [ class_ "data-table" ] ( fmap viewTableRow $ take 25 table )
+viewTable table = table_ [ class_ "data-table" ] ( fmap viewTableRow $ table )
 
 
 -- UPDATE
@@ -237,9 +237,8 @@ update action model = case action of
           
   CountUp -> ( (counter .~ cn) . (commonText .~ t) $ model ) <# do
                   threadDelay 1000000
-                  r <- randomRIO (1, 100)
-                  rdt <- sequence ( fmap sequence randomDataTable) 
-                  if (model ^. counting) then pure (SetRandom r rdt)
+                  r <- randomRIO (1, 100) 
+                  if (model ^. counting) then pure (SetRandom r (randomDataTable r))
                                          else pure NoOp
               where
                 co = model ^. counter
