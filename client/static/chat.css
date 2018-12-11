@@ -66,3 +66,12 @@ body {
 .iframe-in-window {
     flex-grow: 1;
 }
+
+/*
+ * Data Table
+ */
+
+.data-table {
+    scroll-behavior: auto;
+    overflow-y: scroll;
+}

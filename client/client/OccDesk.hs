@@ -27,6 +27,8 @@ import Miso.String (ms, MisoString, unpack)
 import Control.Concurrent (threadDelay)
 import System.Random (randomRIO)
 import Control.Lens
+import Data.List (unfoldr)
+import Control.Monad (sequence)
 
 foreign import javascript unsafe "$($1).draggable({ handle: '.titlebar', stack: '.window', snap: true })" makeDraggable :: MisoString -> IO ()
 foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizable :: MisoString -> IO ()
@@ -35,20 +37,45 @@ foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizab
 
 -- MODELS
 
+maxX :: Int
+maxX = 20
+
+maxY :: Int
+maxY = 1000
+
+type DataRow = [Int]
+type DataTable = [DataRow]
+
 data Model
     = Model { _windowList :: [(String, String)]
             , _commonText :: String
             , _counter :: Int
             , _counting :: Bool
+            , _dataTable :: DataTable
             }
     deriving (Show, Eq)
 
 makeLenses ''Model
 
 initialModel :: Model
-initialModel = Model [] "Lorem Ipsum" 0 False
+initialModel = Model [] "Lorem Ipsum" 0 False initialDataTable
 
+initialDataRow :: DataRow
+initialDataRow = unfoldr giveOne maxX
+                  where giveOne count = if (count == 0) then Nothing else Just (1, count-1)
 
+initialDataTable :: DataTable
+initialDataTable = unfoldr giveRow maxY
+                    where giveRow count = if (count ==0) then Nothing else Just (initialDataRow, count-1)
+
+randomDataRow :: [IO Int]
+randomDataRow = unfoldr giveOne maxX
+                  where giveOne count = if (count == 0) then Nothing else Just (randomRIO (1::Int, 100::Int), count-1)
+
+randomDataTable :: [[IO Int]]
+randomDataTable = unfoldr giveRow maxY
+                    where giveRow count = if (count ==0) then Nothing else Just (randomDataRow, count-1)
+                    
 -- ACTIONS
 
 data Action
@@ -62,7 +89,7 @@ data Action
     | StartCounter
     | StopCounter
     | CountUp
-    | SetRandom Int
+    | SetRandom Int DataTable
     deriving (Show, Eq)
 
 
@@ -82,7 +109,8 @@ viewModel m = div_
 
 datatoggle_ ::  MisoString -> Attribute action
 datatoggle_ = textProp "data-toggle"
-  
+
+
 viewMenu :: View Action
 viewMenu =
   nav_ [ id_ "mainMenu", class_ "navbar navbar-default navbar-fixed-top"]
@@ -132,10 +160,10 @@ viewMenu =
 
 
 viewWindows :: Model -> View Action
-viewWindows (Model list t _ ic) = div_ [] (fmap (\(elementId, title) ->  viewWindow elementId title t ic) list)
+viewWindows (Model list t _ ic dt) = div_ [] (fmap (\(elementId, title) ->  viewWindow elementId title t ic dt) list)
 
-viewWindow :: String -> String -> String -> Bool -> View Action
-viewWindow elementId title textContent isCounting =
+viewWindow :: String -> String -> String -> Bool -> DataTable -> View Action
+viewWindow elementId title textContent isCounting table =
   div_  [ id_ $ ms elementId
         , class_ "window"
         , title_ $ ms title
@@ -146,14 +174,28 @@ viewWindow elementId title textContent isCounting =
                        [ text $ ms title ]
                ]
         , div_ [ class_ "windowcontent" ]
-               [
-                 textarea_ [ onChange ChangeText, value_ $ ms textContent ] [ ]
-               , button_ [ onClick ClearText ][ text "clear" ]
-               , button_ [ onClick FillText ][ text "fill" ]
-               , if isCounting then (button_ [ onClick StopCounter ] [ text "stop"]) 
-                               else (button_ [ onClick StartCounter ] [ text "start"])
+               [ div_ []  [
+                            div_ [] [ textarea_ [ onChange ChangeText, value_ $ ms textContent ] [ ]
+                                    , button_ [ onClick ClearText ][ text "clear" ]
+                                    , button_ [ onClick FillText ][ text "fill" ]
+                                    , if isCounting then (button_ [ onClick StopCounter ] [ text "stop"]) 
+                                                    else (button_ [ onClick StartCounter ] [ text "start"])
+                                    ]
+                          , div_ [] [ viewTable table ]
+                          ]
                ]
         ]
+
+      
+
+viewTableCell :: Int -> View Action
+viewTableCell value = td_ [] [ text $ (ms $ show value) ]
+
+viewTableRow :: DataRow -> View Action
+viewTableRow row = tr_ [] ( fmap viewTableCell row )
+
+viewTable :: DataTable -> View Action
+viewTable table = table_ [ class_ "data-table" ] ( fmap viewTableRow $ take 25 table )
 
 
 -- UPDATE
@@ -196,15 +238,16 @@ update action model = case action of
   CountUp -> ( (counter .~ cn) . (commonText .~ t) $ model ) <# do
                   threadDelay 1000000
                   r <- randomRIO (1, 100)
-                  if (model ^. counting) then pure (SetRandom r)
+                  rdt <- sequence ( fmap sequence randomDataTable) 
+                  if (model ^. counting) then pure (SetRandom r rdt)
                                          else pure NoOp
               where
                 co = model ^. counter
                 cn = co + 1
                 t  = show $ co
 
-  SetRandom r -> ( counter .~ r $ model ) <# do
-                      pure CountUp
+  SetRandom r rdt -> ( (counter .~ r) . (dataTable .~ rdt) $ model ) <# do
+                        pure CountUp
 
   _ -> noEff model
 

@@ -15,8 +15,8 @@ library
     build-depends:  base
                   , miso
 
-  ghc-options:      -Wall -Werror
-  ghcjs-options:    -Wall -Werror
+  ghc-options:      -Wall
+  ghcjs-options:    -Wall
 
   default-language: Haskell2010
 
@@ -42,7 +42,7 @@ executable server
                   , wai-extra
                   , websockets
 
-  ghc-options:      -Wall -Werror
+  ghc-options:      -Wall
 
   default-language: Haskell2010
 
@@ -67,6 +67,6 @@ executable client
                   , lens
                   , random
 
-  ghcjs-options:    -dedupe -Wall -Werror
+  ghcjs-options:    -dedupe -Wall
 
   default-language: Haskell2010
