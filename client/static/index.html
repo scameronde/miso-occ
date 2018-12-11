@@ -16,71 +16,71 @@
   <script src="bootstrap/js/bootstrap.js"></script>
   <script src="my.js"></script>
 
-  <div id="frame1" class="frame" style="width: 800px; height: 400px">
+  <div id="frame1" class="window" style="width: 800px; height: 400px">
     <div class="titlebar">
       <span class="title">Frame 1</span><span> </span><span id="breakoutFrame1" class="decorator glyphicon glyphicon-resize-full"
         aria-hidden="true"></span>
     </div>
     <div class="windowcontent">
-      <iframe src="app.html" class="innerframe"></iframe>
+      <iframe src="app.html" class="iframe-in-window"></iframe>
     </div>
   </div>
 
-  <div id="frame2" class="frame" style="width: 800px; height: 400px">
+  <div id="frame2" class="window" style="width: 800px; height: 400px">
     <div class="titlebar">
       <span class="title">Frame 2</span><span> </span><span id="breakoutFrame2" class="decorator glyphicon glyphicon-resize-full"
         aria-hidden="true"></span>
     </div>
     <div class="windowcontent">
-      <iframe src="app.html" class="innerframe"></iframe>
+      <iframe src="app.html" class="iframe-in-window"></iframe>
     </div>
   </div>
 
-  <div id="frame3" class="frame" style="width: 800px; height: 400px">
+  <div id="frame3" class="window" style="width: 800px; height: 400px">
     <div class="titlebar">
       <span class="title">Frame 3</span><span> </span><span id="breakoutFrame3" class="decorator glyphicon glyphicon-resize-full"
         aria-hidden="true"></span>
     </div>
     <div class="windowcontent">
-      <iframe src="app.html" class="innerframe"></iframe>
+      <iframe src="app.html" class="iframe-in-window"></iframe>
     </div>
   </div>
 
 
-  <div id="frame4" class="frame" style="width: 800px; height: 400px">
+  <div id="frame4" class="window" style="width: 800px; height: 400px">
     <div class="titlebar">
       <span class="title">Frame 4</span><span> </span><span id="breakoutFrame4" class="decorator glyphicon glyphicon-resize-full"
         aria-hidden="true"></span>
     </div>
     <div class="windowcontent">
-      <iframe src="app.html" class="innerframe"></iframe>
+      <iframe src="app.html" class="iframe-in-window"></iframe>
     </div>
   </div>
 
 
   <script>
-    $("#frame1").draggable({ handle: '.titlebar', stack: ".frame", iframeFix: true, snap: true });
+    $("#frame1").draggable({ handle: '.titlebar', stack: ".window", iframeFix: true, snap: true });
     $("#frame1").resizable({ grid: [5, 5] });
     $("#breakoutFrame1").click(() => {
       var win = window.open("app.html", "_blank");
       $("#frame1").hide();
     });
 
-    $("#frame2").draggable({ handle: '.titlebar', stack: ".frame", iframeFix: true, snap: true });
+    $("#frame2").draggable({ handle: '.titlebar', stack: ".window", iframeFix: true, snap: true });
     $("#frame2").resizable({ grid: [5, 5] });
     $("#breakoutFrame2").click(() => {
       var win = window.open("app.html", "_blank");
       $("#frame2").hide();
     });
 
-    $("#frame3").draggable({ handle: '.titlebar', stack: ".frame", iframeFix: true, snap: true });
+    $("#frame3").draggable({ handle: '.titlebar', stack: ".window", iframeFix: true, snap: true });
     $("#frame3").resizable({ grid: [5, 5] });
     $("#breakoutFrame3").click(() => {
       var win = window.open("app.html", "_blank");
       $("#frame3").hide();
     });
 
-    $("#frame4").draggable({ handle: '.titlebar', stack: ".frame", iframeFix: true, snap: true });
+    $("#frame4").draggable({ handle: '.titlebar', stack: ".window", iframeFix: true, snap: true });
     $("#frame4").resizable({ grid: [5, 5] });
     $("#breakoutFrame4").click(() => {
       var win = window.open("app.html", "_blank");

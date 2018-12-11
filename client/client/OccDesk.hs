@@ -22,16 +22,16 @@ import qualified Data.JSString as T
 import           Miso                    hiding ( action_
                                                 , model
                                                 )
-import Miso.String (ms, MisoString)
+import Miso.String (ms)
+--import Miso.String (ms, MisoString)
 --import Miso.FFI
 
 
 foreign import javascript unsafe "$($1).zinoMenu()" makeMenu :: T.JSString -> IO () 
 foreign import javascript unsafe "$($1).zinoMenu('close', $($2))" closeMenu :: T.JSString -> T.JSString -> IO ()
 
-foreign import javascript unsafe "$($1).draggable({handle: '.titlebar'})" makeDraggable :: T.JSString -> IO ()
-foreign import javascript unsafe "$($1).resizable()" makeResizable :: T.JSString -> IO ()
-foreign import javascript unsafe "bubble($1)" bubble :: MisoString -> IO ()
+foreign import javascript unsafe "$($1).draggable({ handle: '.titlebar', stack: '.window', snap: true })" makeDraggable :: T.JSString -> IO ()
+foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizable :: T.JSString -> IO ()
 
 
 
@@ -57,8 +57,6 @@ data Action
     | MenuClicked MenuItem
     | ZinoWindowNew
     | ZinoWindowOpened T.JSString
-    | WindowTitleClicked String
-    | WindowDragStarted String
     | ClearText
     | FillText
     | ChangeText T.JSString
@@ -117,20 +115,17 @@ viewWindow elementId title content =
         , title_ $ ms title
         , onCreated (ZinoWindowOpened $ T.pack ("#" ++ elementId))
         ] 
-        [ p_  [ onClick (WindowTitleClicked elementId)
-              , onDragStart (WindowDragStarted elementId) 
-              , class_ "titlebar"
-              ] 
-              [ text "Huhu" 
-              ]
-        , p_  []
-              [
-                textarea_ [ onChange ChangeText, value_ $ ms content ] [ ]
-              , button_ [ onClick ClearText ][ text "clear" ]
-              , button_ [ onClick FillText ][ text "fill" ]
-              ]
+        [ div_ [ class_ "titlebar" ]
+               [ span_ [ class_ "title" ]
+                       [ text $ ms title ]
+               ]
+        , div_ [ class_ "windowcontent" ]
+               [
+                 textarea_ [ onChange ChangeText, value_ $ ms content ] [ ]
+               , button_ [ onClick ClearText ][ text "clear" ]
+               , button_ [ onClick FillText ][ text "fill" ]
+               ]
         ]
-
 
 
 -- UPDATE
@@ -168,16 +163,6 @@ update action model = case action of
                                            makeResizable elementId
                                            return NoOp
 
-  WindowTitleClicked elementId -> model <# do
-                                    putStrLn ( "Window Title Clicked: " ++ elementId )
-                                    bubble $ ms elementId
-                                    return NoOp
-
-  WindowDragStarted elementId -> model <# do
-    putStrLn ( "Window Drag Started: " ++ elementId )
-    bubble $ ms elementId
-    return NoOp
-    
   ClearText -> noEff ( Model ( getList model ) "" )
 
   FillText -> noEff ( Model ( getList model ) "Hakuna Matata" )
