@@ -18,17 +18,16 @@ module OccDesk
   )
 where
 
-import qualified Data.JSString as T
 import           Miso                    hiding ( action_
                                                 , model
                                                 )
-import Miso.String (ms, MisoString)
+import Miso.String (ms, MisoString, unpack)
 --import Miso.String (ms, MisoString)
 --import Miso.FFI
 
 
-foreign import javascript unsafe "$($1).draggable({ handle: '.titlebar', stack: '.window', snap: true })" makeDraggable :: T.JSString -> IO ()
-foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizable :: T.JSString -> IO ()
+foreign import javascript unsafe "$($1).draggable({ handle: '.titlebar', stack: '.window', snap: true })" makeDraggable :: MisoString -> IO ()
+foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizable :: MisoString -> IO ()
 
 
 
@@ -51,10 +50,10 @@ data Action
     = NoOp
     | MenuClicked MenuItem
     | WindowNew
-    | WindowOpened T.JSString
+    | WindowOpened MisoString
     | ClearText
     | FillText
-    | ChangeText T.JSString
+    | ChangeText MisoString
     deriving (Show, Eq)
 
 
@@ -131,7 +130,7 @@ viewWindow elementId title content =
   div_  [ id_ $ ms elementId
         , class_ "window"
         , title_ $ ms title
-        , onCreated (WindowOpened $ T.pack ("#" ++ elementId))
+        , onCreated (WindowOpened $ ms ("#" ++ elementId))
         ] 
         [ div_ [ class_ "titlebar" ]
                [ span_ [ class_ "title" ]
@@ -174,7 +173,7 @@ update action model = case action of
 
   FillText -> noEff ( Model ( getList model ) "Hakuna Matata" )
 
-  ChangeText s -> noEff ( Model ( getList model) $ T.unpack s )
+  ChangeText s -> noEff ( Model ( getList model) $ unpack s )
 
   _ -> noEff model
 
