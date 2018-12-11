@@ -23,7 +23,7 @@ import           Miso                    hiding ( action_
                                                 )
 import Miso.String (ms, MisoString, unpack)
 import Control.Concurrent (threadDelay)
-
+import System.Random (randomRIO)
 
 foreign import javascript unsafe "$($1).draggable({ handle: '.titlebar', stack: '.window', snap: true })" makeDraggable :: MisoString -> IO ()
 foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizable :: MisoString -> IO ()
@@ -58,6 +58,7 @@ data Action
     | StartCounter
     | StopCounter
     | CountUp
+    | SetRandom Int
     deriving (Show, Eq)
 
 
@@ -217,15 +218,23 @@ update action model = case action of
                     ic = False
           
   CountUp -> ( Model l t c ic ) <# do
-                  putStrLn "Count Up"
                   threadDelay 1000000
-                  if (ic) then pure CountUp
+                  r <- randomRIO (1, 100)
+                  if (ic) then pure (SetRandom r)
                           else pure NoOp
               where
                 l  = getList model
                 t  = show $ getCounter model
                 c  = (getCounter model) + 1
                 ic = getCounting model
+
+  SetRandom r -> ( Model l t r ic ) <# do
+                      pure CountUp
+                  where
+                    l  = getList model
+                    t  = getText model
+                    ic = getCounting model
+
 
   _ -> noEff model
 

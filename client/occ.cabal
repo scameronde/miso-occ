@@ -65,6 +65,7 @@ executable client
                   , time
                   , text
                   , lens
+                  , random
 
   ghcjs-options:    -dedupe -Wall -Werror
 
