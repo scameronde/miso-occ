@@ -22,10 +22,6 @@ body {
     padding: 5px;
 }
 
-body {
-    padding-top: 0px;
-}
-
 .scrolltable {
     overflow: scroll;
     height: 100px;

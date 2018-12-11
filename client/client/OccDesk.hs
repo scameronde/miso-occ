@@ -22,13 +22,10 @@ import qualified Data.JSString as T
 import           Miso                    hiding ( action_
                                                 , model
                                                 )
-import Miso.String (ms)
+import Miso.String (ms, MisoString)
 --import Miso.String (ms, MisoString)
 --import Miso.FFI
 
-
-foreign import javascript unsafe "$($1).zinoMenu()" makeMenu :: T.JSString -> IO () 
-foreign import javascript unsafe "$($1).zinoMenu('close', $($2))" closeMenu :: T.JSString -> T.JSString -> IO ()
 
 foreign import javascript unsafe "$($1).draggable({ handle: '.titlebar', stack: '.window', snap: true })" makeDraggable :: T.JSString -> IO ()
 foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizable :: T.JSString -> IO ()
@@ -52,11 +49,9 @@ initialModel = Model [] "Lorem Ipsum"
 
 data Action
     = NoOp
-    | ZinoMenuCreated T.JSString
-    | ZinoMenuClose T.JSString T.JSString
     | MenuClicked MenuItem
-    | ZinoWindowNew
-    | ZinoWindowOpened T.JSString
+    | WindowNew
+    | WindowOpened T.JSString
     | ClearText
     | FillText
     | ChangeText T.JSString
@@ -77,32 +72,55 @@ view m = div_
   , viewWindows m
   ]
 
-
+datatoggle_ ::  MisoString -> Attribute action
+datatoggle_ = textProp "data-toggle"
+  
 viewMenu :: View Action
 viewMenu =
-  ul_ [ id_ "mainMenu", onCreated (ZinoMenuCreated "#mainMenu") ]
-  [ li_ [] [ a_ [href_ "#"] [ text "Hilferaum" ] ]
-  , li_ [] [ a_ [href_ "#"] [ text "Begrüßungsraum" ] ]
-  , li_ [] [ a_ [href_ "#"] [ text "Konferenzübersicht" ] ] 
-  , li_ [] [ a_ [ href_ "#" ] [ text "???" ] ]
-  , li_ [ id_ "terminalsMenu" ] [ a_ [ href_ "#" ] [ text "Terminals" ]
-           , ul_ [] 
-                 [ li_ [ onClick (MenuClicked MenuPIN)] [ a_ [ href_ "#" ] [ text "PIN Eingabe" ] ]
-                 , li_ [] [ a_ [href_ "#"] [ text "Eingangshalle" ] ]
-                 , li_ [] [ a_ [href_ "#"] [ text "Anrufhistorie" ] ]
-                 , li_ [] [ a_ [href_ "#"] [ text "Wartefeld" ] ]
-                 , li_ [] [ a_ [href_ "#"] [ text "Logging Console" ] ]
-                 , li_ [] [ a_ [href_ "#"] [ text "Gehaltene Anrufe" ] ]
-                 ] 
-            ]
-  , li_ [] [ a_ [href_ "#"] [ text "Kunden und Accounts" ] 
-           , ul_ [] [ li_ [] [ a_ [href_ "#"] [ text "WMT" ] ]
-                    , li_ [] [ a_ [href_ "#"] [ text "Kunden" ] ]
-                    , li_ [] [ a_ [href_ "#"] [ text "Accounts" ] ]
+  nav_ [ id_ "mainMenu", class_ "navbar navbar-default navbar-fixed-top"]
+       [ div_ [ class_ "container-fluid"]
+              [ div_ [ class_ "navbar-header" ]
+                     [ a_ [ class_ "navbar-brand", href_ "#" ] [text "OCC"] ]
+              , ul_ [ class_ "nav navbar-nav"]
+                    [ li_ [] [ a_ [href_ "#"] [ text "Hilferaum" ] ]
+                    , li_ [] [ a_ [href_ "#"] [ text "Begrüßungsraum" ] ]
+                    , li_ [] [ a_ [href_ "#"] [ text "Konferenzübersicht" ] ] 
+                    , li_ [] [ a_ [ href_ "#" ] [ text "???" ] ]
+                    , li_ [ class_ "dropdown" ] 
+                          [ a_ [ class_ "dropdown-toggle"
+                               , datatoggle_ "dropdown"
+                               , href_ "#"
+                               ] 
+                               [ text "Terminals"
+                               , span_ [ class_ "caret" ] []  
+                               ]
+                          , ul_ [ class_ "dropdown-menu" ]
+                                [ li_ [ onClick (MenuClicked MenuPIN) ] [ a_ [href_ "#"] [ text "PIN Eingabe" ] ]
+                                , li_ [] [ a_ [href_ "#"] [ text "Eingangshalle" ] ]
+                                , li_ [] [ a_ [href_ "#"] [ text "Anrufhistorie" ] ]
+                                , li_ [] [ a_ [href_ "#"] [ text "Wartefeld" ] ]
+                                , li_ [] [ a_ [href_ "#"] [ text "Logging Console" ] ]
+                                , li_ [] [ a_ [href_ "#"] [ text "Gehaltene Anrufe" ] ]
+                                ]
+                          ]
+                    , li_ [ class_ "dropdown" ] 
+                          [ a_ [ class_ "dropdown-toggle"
+                               , datatoggle_ "dropdown"
+                               , href_ "#"] 
+                               [ text "Kunden und Accounts" 
+                               , span_ [ class_ "caret" ] []
+                               ]
+                          , ul_ [ class_ "dropdown-menu" ]
+                                [
+                                  li_ [] [ a_ [href_ "#"] [ text "WMT" ] ]
+                                , li_ [] [ a_ [href_ "#"] [ text "Kunden" ] ]
+                                , li_ [] [ a_ [href_ "#"] [ text "Accounts" ] ]
+                                ]
+                          ]
+                    , li_ [] [ a_ [href_ "#"] [ text "Einstellungen" ] ]
                     ]
-           ]
-  , li_ [] [ a_ [href_ "#"] [ text "Einstellungen" ] ]
-  ]
+              ]
+       ]
 
 
 viewWindows :: Model -> View Action
@@ -113,7 +131,7 @@ viewWindow elementId title content =
   div_  [ id_ $ ms elementId
         , class_ "window"
         , title_ $ ms title
-        , onCreated (ZinoWindowOpened $ T.pack ("#" ++ elementId))
+        , onCreated (WindowOpened $ T.pack ("#" ++ elementId))
         ] 
         [ div_ [ class_ "titlebar" ]
                [ span_ [ class_ "title" ]
@@ -132,36 +150,25 @@ viewWindow elementId title content =
 
 update :: Action -> Model -> Effect Action Model
 update action model = case action of
-  ZinoMenuCreated elementId -> model <# do 
-                                          makeMenu elementId
-                                          return NoOp
-
-  ZinoMenuClose parentElement closeElement -> model <# do
-                                                         closeMenu parentElement closeElement
-                                                         return NoOp
-  
   MenuClicked MenuPIN -> batchEff model [ do
                                             putStrLn "Clicked: PIN"
-                                            return (ZinoMenuClose "#mainMenu" "#terminalsMenu")
+                                            pure NoOp
                                         ,
                                           do
                                             putStrLn "Opening Window"
-                                            return ZinoWindowNew
+                                            pure WindowNew
                                         ]
 
-  ZinoWindowNew -> noEff ( Model ( list 
-                                  ++ [("window_" ++ show num, "New Window " ++ show num)]
-                                 ) t
-                         )
+  WindowNew -> noEff ( Model ( list ++ [("window_" ++ show num, "New Window " ++ show num)]) t )
                    where list = getList model
                          t = getText model
                          num = length list
 
-  ZinoWindowOpened elementId -> model <# do
-                                           putStrLn "Window opened"
-                                           makeDraggable elementId
-                                           makeResizable elementId
-                                           return NoOp
+  WindowOpened elementId -> model <# do
+                                        putStrLn "Window opened"
+                                        makeDraggable elementId
+                                        makeResizable elementId
+                                        pure NoOp
 
   ClearText -> noEff ( Model ( getList model ) "" )
 
