@@ -194,8 +194,22 @@ viewTableCell value = td_ [] [ text $ (ms $ show value) ]
 viewTableRow :: DataRow -> View Action
 viewTableRow row = tr_ [] ( fmap viewTableCell row )
 
+viewTableHeaderCell :: Int -> View Action
+viewTableHeaderCell columnNr = td_ [] [ text $ (ms $ show columnNr) ]
+
+viewTableHeaderRow :: Int -> View Action
+viewTableHeaderRow numColumns = tr_ [] ( fmap viewTableHeaderCell [1..numColumns] )
+
 viewTable :: DataTable -> View Action
-viewTable table = table_ [ class_ "data-table" ] ( fmap viewTableRow $ table )
+viewTable table = table_ [ class_ "data-table" ] 
+                         [ thead_ [] [( viewTableHeaderRow $ calcNumColumns table )]
+                         , tbody_ [] ( fmap viewTableRow $ table )
+                         ]
+
+calcNumColumns :: DataTable -> Int
+calcNumColumns table = length (table !! 0)
+
+
 
 
 -- UPDATE
@@ -229,11 +243,9 @@ update action model = case action of
 
   ChangeText s -> noEff ( commonText .~ (unpack s) $ model )
 
-  StartCounter -> ( counting .~ True $ model ) <# do
-                      pure CountUp
+  StartCounter -> ( counting .~ True $ model ) <# pure CountUp
         
-  StopCounter -> ( counting .~ False $ model ) <# do
-                      pure CountUp
+  StopCounter -> ( counting .~ False $ model ) <# pure CountUp
           
   CountUp -> ( (counter .~ cn) . (commonText .~ t) $ model ) <# do
                   threadDelay 1000000
@@ -245,8 +257,7 @@ update action model = case action of
                 cn = co + 1
                 t  = show $ co
 
-  SetRandom r rdt -> ( (counter .~ r) . (dataTable .~ rdt) $ model ) <# do
-                        pure CountUp
+  SetRandom r rdt -> ( (counter .~ r) . (dataTable .~ rdt) $ model ) <# pure CountUp
 
   _ -> noEff model
 
