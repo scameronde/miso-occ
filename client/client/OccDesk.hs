@@ -191,7 +191,7 @@ viewWindow elementId title textContent isCounting table =
                                     , if isCounting then (button_ [ onClick StopCounter ] [ text "stop"]) 
                                                     else (button_ [ onClick StartCounter ] [ text "start"])
                                     ]
-                          , div_ [] [ viewTable table ]
+                          , div_ [] [ viewTable elementId table]
                           ]
                ]
         ]
@@ -210,12 +210,12 @@ viewTableHeaderCell columnNr = td_ [] [ text $ (ms $ show columnNr) ]
 viewTableHeaderRow :: Int -> View Action
 viewTableHeaderRow numColumns = tr_ [] ( fmap viewTableHeaderCell [1..numColumns] )
 
-viewTable :: DataTable -> View Action
-viewTable table = table_ [ id_ "table"
+viewTable :: String -> DataTable -> View Action
+viewTable windowId table = table_ [ id_ $ ms (windowId ++ "_table")
                          , datatoggle_ "table"
                          , datasearch_ "true"
                          , datapagination_ "true"
-                         , onCreated (TableCreated "#table")
+                         , onCreated (TableCreated $ ms ("#" ++ windowId ++ "_table"))
                          ] 
                          [ thead_ [] [( viewTableHeaderRow $ calcNumColumns table )]
                          , tbody_ [] ( fmap viewTableRow $ ( take 15 table ) )
