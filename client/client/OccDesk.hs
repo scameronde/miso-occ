@@ -32,6 +32,7 @@ import Control.Monad (sequence)
 
 foreign import javascript unsafe "$($1).draggable({ handle: '.titlebar', stack: '.window', snap: true })" makeDraggable :: MisoString -> IO ()
 foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizable :: MisoString -> IO ()
+foreign import javascript unsafe "$($1).bootstrapTable()" initBootstrapTable :: MisoString -> IO ()
 
 
 
@@ -83,6 +84,7 @@ data Action
     | MenuClicked MenuItem
     | WindowNew
     | WindowOpened MisoString
+    | TableCreated MisoString
     | ClearText
     | FillText
     | ChangeText MisoString
@@ -109,6 +111,14 @@ viewModel m = div_
 
 datatoggle_ ::  MisoString -> Attribute action
 datatoggle_ = textProp "data-toggle"
+
+datasearch_ ::  MisoString -> Attribute action
+datasearch_ = textProp "data-search"
+
+datapagination_ ::  MisoString -> Attribute action
+datapagination_ = textProp "data-pagination"
+
+
 
 
 viewMenu :: View Action
@@ -201,9 +211,14 @@ viewTableHeaderRow :: Int -> View Action
 viewTableHeaderRow numColumns = tr_ [] ( fmap viewTableHeaderCell [1..numColumns] )
 
 viewTable :: DataTable -> View Action
-viewTable table = table_ [ class_ "data-table" ] 
+viewTable table = table_ [ id_ "table"
+                         , datatoggle_ "table"
+                         , datasearch_ "true"
+                         , datapagination_ "true"
+                         , onCreated (TableCreated "#table")
+                         ] 
                          [ thead_ [] [( viewTableHeaderRow $ calcNumColumns table )]
-                         , tbody_ [] ( fmap viewTableRow $ table )
+                         , tbody_ [] ( fmap viewTableRow $ ( take 15 table ) )
                          ]
 
 calcNumColumns :: DataTable -> Int
@@ -235,6 +250,11 @@ update action model = case action of
                                         putStrLn "Window opened"
                                         makeDraggable elementId
                                         makeResizable elementId
+                                        pure NoOp
+
+  TableCreated elementId -> model <# do
+                                        putStrLn "Table created"
+                                        initBootstrapTable elementId
                                         pure NoOp
 
   ClearText -> noEff ( commonText .~ "" $ model )
