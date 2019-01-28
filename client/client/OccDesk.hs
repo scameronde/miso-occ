@@ -218,7 +218,7 @@ viewTable windowId table = table_ [ id_ $ ms (windowId ++ "_table")
                          , onCreated (TableCreated $ ms ("#" ++ windowId ++ "_table"))
                          ] 
                          [ thead_ [] [( viewTableHeaderRow $ calcNumColumns table )]
-                         , tbody_ [] ( fmap viewTableRow $ ( take 15 table ) )
+                         , tbody_ [] ( fmap viewTableRow $ ( table ) )
                          ]
 
 calcNumColumns :: DataTable -> Int
