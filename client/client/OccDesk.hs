@@ -33,7 +33,6 @@ import Control.Monad (sequence)
 foreign import javascript unsafe "$($1).draggable({ handle: '.titlebar', stack: '.window', snap: true })" makeDraggable :: MisoString -> IO ()
 foreign import javascript unsafe "$($1).resizable({ grid: [5, 5] })" makeResizable :: MisoString -> IO ()
 foreign import javascript unsafe "$($1).bootstrapTable()" initBootstrapTable :: MisoString -> IO ()
-foreign import javascript unsafe "new Clusterize({scrollId: '$1', contentId: '$2'})" clusterize :: MisoString -> MisoString -> IO ()
 
 
 
@@ -85,7 +84,7 @@ data Action
     | MenuClicked MenuItem
     | WindowNew
     | WindowOpened MisoString
-    | TableCreated MisoString MisoString MisoString
+    | TableCreated MisoString
     | ClearText
     | FillText
     | ChangeText MisoString
@@ -212,23 +211,18 @@ viewTableHeaderRow :: Int -> View Action
 viewTableHeaderRow numColumns = tr_ [] ( fmap viewTableHeaderCell [1..numColumns] )
 
 viewTable :: String -> DataTable -> View Action
-viewTable windowId table = div_ [ id_ $ ms (windowId ++ "_scrollArea")
-                                --, class_ "clusterize-scroll"
-                                ]
-                                [
+viewTable windowId table = 
                                   table_ [ id_ $ ms (windowId ++ "_table")
                                         , datatoggle_ "table"
                                         , datasearch_ "true"
                                         , datapagination_ "true"
-                                        , onCreated (TableCreated (ms ("#" ++ windowId ++ "_table")) (ms (windowId ++ "_scrollArea")) (ms (windowId ++ "_contentArea")))
+                                        , onCreated (TableCreated (ms ("#" ++ windowId ++ "_table")))
                                         ] 
                                         [ thead_ [] [( viewTableHeaderRow $ calcNumColumns table )]
-                                        , tbody_ [ id_ $ ms (windowId ++ "_contentArea")
-                                                --, class_ "clusterize-content"
-                                                ] 
-                                                ( fmap viewTableRow table )
+                                        , tbody_ [                                                  
+                                                 ] 
+                                                 ( fmap viewTableRow table )
                                         ]
-                                ]
 
 calcNumColumns :: DataTable -> Int
 calcNumColumns table = length (table !! 0)
@@ -261,10 +255,9 @@ update action model = case action of
                                         makeResizable elementId
                                         pure NoOp
 
-  TableCreated elementId scrollArea contentArea -> model <# do
+  TableCreated elementId -> model <# do
                                         putStrLn "Table created"
                                         initBootstrapTable elementId
-                                        -- clusterize scrollArea contentArea
                                         pure NoOp
 
   ClearText -> noEff ( commonText .~ "" $ model )
